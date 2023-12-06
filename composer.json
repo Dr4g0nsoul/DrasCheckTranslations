@@ -1,0 +1,32 @@
+{
+    "name": "dras-check-translations/dras-check-translations",
+    "description": "Check for missing translations in snippets",
+    "type": "shopware-platform-plugin",
+    "version": "1.0.0",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Dr4g0nsoul"
+        }
+    ],
+    "require": {
+        "shopware/core": "6.5.*"
+    },
+    "extra": {
+        "shopware-plugin-class": "Dras\\CheckTranslations\\DrasCheckTranslations",
+        "label": {
+            "de-DE": "Kontrolliere fehlende snippet Übersetzungen",
+            "en-GB": "Check for missing translations in snippets"
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Dras\\CheckTranslations\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Dras\\CheckTranslations\\Tests\\": "tests/"
+        }
+    }
+}

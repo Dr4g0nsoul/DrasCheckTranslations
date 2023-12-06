@@ -1,0 +1,25 @@
+<?xml version="1.0" ?>
+
+<container xmlns="http://symfony.com/schema/dic/services"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    <services>
+
+        <service id="Dras\CheckTranslations\Service\MissingTranslationsService" public="true">
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <argument type="service" id="Shopware\Core\System\Snippet\Files\SnippetFileCollection"/>
+            <argument type="service" id="snippet.repository"/>
+        </service>
+
+        <service id="Dras\CheckTranslations\Command\MissingTranslationsCommand">
+            <argument type="service" id="Dras\CheckTranslations\Service\MissingTranslationsService"/>
+            <tag name="console.command"/>
+        </service>
+
+        <service id="Dras\CheckTranslations\Core\Content\Example\SalesChannel\ExampleRoute">
+            <argument type="service" id="product.repository"/>
+        </service>
+
+    </services>
+</container>
