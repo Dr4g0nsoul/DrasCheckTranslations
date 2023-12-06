@@ -7,7 +7,7 @@ Adds a new symfony command which scans through varios Snippets in the Storefront
 
 ## Usage:
 ```
-dras:missing-translations [options]
+bin/console dras:missing-translations [options]
 ```
 ### Options:
 - -l, --base-locale=BASE-LOCALE      REQUIRED: Language the Shop is based on (Contains all Snippet Keys)
