@@ -9,7 +9,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-class MissingTranslationsCommand extends Command
+class MissingSnippetTranslationsCommand extends Command
 {
 
     public function __construct(private MissingTranslationsService $missingTranslationService) {
@@ -17,12 +17,12 @@ class MissingTranslationsCommand extends Command
     }
 
     // Command name
-    protected static $defaultName = 'dras:missing-translations';
+    protected static $defaultName = 'dras:missing-snippet-translations';
 
     // Provides a description, printed out in bin/console
     protected function configure(): void
     {
-        $this->setDescription('Find missing translations in your Shop.');
+        $this->setDescription('Find missing snippet translations in your Shop.');
         $this->addOption("base-locale", "l", InputOption::VALUE_REQUIRED, "REQUIRED: Language the Shop is based on (Contains all Snippet Keys)");
         $this->addOption("max-charcters", "m", InputOption::VALUE_REQUIRED, "Truncate text after n characters and add a '...' ellipsis", 0);
     }
@@ -37,12 +37,14 @@ class MissingTranslationsCommand extends Command
             return 1;
         }
 
+        $baseLocale = $input->getOption('base-locale');
+
         $maxChars = 0;
         if(\is_numeric($input->getOption('max-charcters'))) {
             $maxChars = (int)$input->getOption('max-charcters');
         }
         
-        $missingSnippets = $this->missingTranslationService->getMissingSnippets($input->getOption('base-locale'), $maxChars);
+        $missingSnippets = $this->missingTranslationService->getMissingSnippets($baseLocale, $maxChars);
         if($missingSnippets === \false) {
             $io->error("Error retrieving missing snippets. Check that the base-locale is correctly set (e.g. de-DE or en-GB)");
         } elseif(empty($missingSnippets)) {
@@ -52,8 +54,20 @@ class MissingTranslationsCommand extends Command
             $io->table($headers, $missingSnippets);
             $io->warning("Please check the listed translations above!");
         }
-
+        
         // Exit code 0 for success
         return 0;
+    }
+
+    private function kebabToCamelCase($string, $capitalizeFirstCharacter = false)  : string
+    {
+    
+        $str = str_replace('_', '', ucwords($string, '_'));
+    
+        if (!$capitalizeFirstCharacter) {
+            $str = lcfirst($str);
+        }
+    
+        return $str;
     }
 }
