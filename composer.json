@@ -2,7 +2,7 @@
     "name": "dras-check-translations/dras-check-translations",
     "description": "Check for missing translations in snippets",
     "type": "shopware-platform-plugin",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "license": "MIT",
     "authors": [
         {
@@ -10,7 +10,7 @@
         }
     ],
     "require": {
-        "shopware/core": "6.5.*"
+        "shopware/core": "6.5.* || 6.6.*"
     },
     "extra": {
         "shopware-plugin-class": "Dras\\CheckTranslations\\DrasCheckTranslations",

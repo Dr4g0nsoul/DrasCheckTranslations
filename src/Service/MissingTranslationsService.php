@@ -3,6 +3,7 @@
 namespace Dras\CheckTranslations\Service;
 
 use Doctrine\DBAL\Connection;
+use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
@@ -19,10 +20,10 @@ class MissingTranslationsService {
         private readonly SnippetFileCollection $snippetFileCollection,
         private readonly EntityRepository $snippetRepository) {}
 
-    public function getMissingSnippets(string $baseLocale, int $limitCharacters = -1) : array|false {
+    public function getMissingSnippets(int $limitCharacters = -1) : array|false {
 
+        $baseLocale = $this->getBaseLocale();
         $context = Context::createDefaultContext();
-
         $isoList = $this->getActiveSalesChannelSnippetSets();
 
         $baseSnippetSetId = array_search($baseLocale, $isoList);
@@ -52,7 +53,7 @@ class MissingTranslationsService {
                         $missingSnippet[$value] = $snippets[$key]["snippets"][$snippetKey];
                     }
                 } elseif (isset($snippets[$baseSnippetSetId]["snippets"][$snippetKey])) {
-                    $missingSnippet[$value] = "";
+                    $missingSnippet[$value] = "\033[0;31m  X  \033[0m";
                     $missing = \true;
                 }
             }
@@ -64,7 +65,8 @@ class MissingTranslationsService {
         return $missingSnippets;
     }
 
-    public function getMissingEntityTranslations(string $baseLocale, array $includeTables = []) : array|false {
+    public function getMissingEntityTranslations(array $includeTables = []) : array|false {
+        $baseLocale = $this->getBaseLocale();
         $activeLanguages = $this->getActiveLanguages();
         if(!\key_exists($baseLocale, $activeLanguages)) {
             return \false;
@@ -85,6 +87,7 @@ class MissingTranslationsService {
 
         if(!empty($missingTranslations)) {
             $missingTranslations[self::ENTITY_TRANSLATION_META_LANG_FIELD_NAME] = $activeLanguages;
+            unset($missingTranslations[self::ENTITY_TRANSLATION_META_LANG_FIELD_NAME][$baseLocale]);
         }
 
         return $missingTranslations;
@@ -283,18 +286,24 @@ class MissingTranslationsService {
 
         foreach ($baseTranslations as $baseTranslation) {
             $entityIdHex = Uuid::fromBytesToHex($baseTranslation[$entityTableName."_id"]);
+            $emptyFieldsInBaseTranslations = [];
+            foreach($baseTranslation as $fieldname => $value) {
+                if($value === null || $value === "[]" || $value === "{}") {
+                    $emptyFieldsInBaseTranslations[] = $fieldname;
+                }
+            }
             if(!$entityFields) {
-                $entityFields = $this->filterEntityFields($tableName, \array_keys($baseTranslation));
+                $entityFields = $this->filterEntityFields($tableName, \array_keys($baseTranslation), $emptyFieldsInBaseTranslations);
             }
             $missingFields = [];
             $missingFieldsCount = [];
+
             
             foreach ($activeLanguages as $code => $id) {
-                $translatedData = $baseTranslation;
-                if($id !== $baseLanguageId) {
-                    $query = "SELECT * FROM $tableName WHERE $tableName.`".$entityTableName."_id` = UNHEX('$entityIdHex') AND $tableName.`language_id` = UNHEX('$id')";
-                    $translatedData = $this->connection->fetchAssociative($query);
-                }
+                if($id === $baseLanguageId) continue;
+
+                $query = "SELECT * FROM $tableName WHERE $tableName.`".$entityTableName."_id` = UNHEX('$entityIdHex') AND $tableName.`language_id` = UNHEX('$id')";
+                $translatedData = $this->connection->fetchAssociative($query);
                 if(empty($translatedData)) {
                     $missingFields[$code] = $entityFields;
                     continue;
@@ -307,7 +316,6 @@ class MissingTranslationsService {
                     }
                 }
             }
-            $this->filterEmptyFields($missingFields, $missingFieldsCount, \count($activeLanguages));
             if(!empty($missingFields)) {
                 $missingTranslations[$entityIdHex]["missingFields"] = $missingFields;
             }
@@ -316,7 +324,7 @@ class MissingTranslationsService {
         return $missingTranslations;
     }
 
-    protected function filterEntityFields(string $tableName, array $fieldKeys) : array {
+    protected function filterEntityFields(string $tableName, array $fieldKeys, array $emptyFieldsInBaseTranslation) : array {
         $validKeysToCheck = [];
         $entityTableName = \substr($tableName, 0, \strrpos($tableName, "_translation"));
         foreach ($fieldKeys as $fieldKey) {
@@ -332,7 +340,7 @@ class MissingTranslationsService {
             $validKeysToCheck[] = $fieldKey;
         }
 
-        return $validKeysToCheck;
+        return \array_diff($validKeysToCheck, $emptyFieldsInBaseTranslation);
     }
 
     protected function filterEmptyFields(array &$missingTranslatedFields, array $missingFieldsCount, int $langCount) {
@@ -358,6 +366,13 @@ class MissingTranslationsService {
             $i++;
         }
         return $flattened;
+    }
+
+    private function getBaseLocale() {
+        $sql = "SELECT loc.code FROM `locale` loc 
+                INNER JOIN `language` lang ON loc.id = lang.locale_id
+                WHERE lang.id = 0x" . Defaults::LANGUAGE_SYSTEM;
+        return $this->connection->fetchOne($sql);
     }
 
 }

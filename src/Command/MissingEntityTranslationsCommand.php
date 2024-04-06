@@ -3,12 +3,18 @@
 namespace Dras\CheckTranslations\Command;
 
 use Dras\CheckTranslations\Service\MissingTranslationsService;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
+#[AsCommand(
+    name: 'dras:missing-entity-translations',
+    description: 'Find missing entity translations in your Shop. (Custom fields not yet supported)',
+    hidden: false
+)]
 class MissingEntityTranslationsCommand extends Command
 {
 
@@ -23,7 +29,6 @@ class MissingEntityTranslationsCommand extends Command
     protected function configure(): void
     {
         $this->setDescription('Find missing entity translations in your Shop. (Custom fields not yet supported)');
-        $this->addOption("base-locale", "l", InputOption::VALUE_REQUIRED, "REQUIRED: Language the Shop is based on (Contains all Snippet Keys)");
         $this->addOption("max-charcters", "m", InputOption::VALUE_REQUIRED, "Truncate text after n characters and add a '...' ellipsis", 0);
         $this->addOption("include-tables", "i", InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, "Array of table names to include. (Use DB Table names, '_translation' can be omitted)", []);
     }
@@ -32,13 +37,6 @@ class MissingEntityTranslationsCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-
-        if(empty($input->getOption('base-locale'))) {
-            $io->error("Base locale can not be empty. Use -h for more information");
-            return 1;
-        }
-
-        $baseLocale = $input->getOption('base-locale');
 
         $maxChars = 0;
         if(\is_numeric($input->getOption('max-charcters'))) {
@@ -52,9 +50,9 @@ class MissingEntityTranslationsCommand extends Command
             $filterTables = [];
         }
 
-        $missingTranslations = $this->missingTranslationService->getMissingEntityTranslations($baseLocale, $filterTables);
+        $missingTranslations = $this->missingTranslationService->getMissingEntityTranslations($filterTables);
         if($missingTranslations === \false) {
-            $io->error("Error retrieving missing translations. Check that the base-locale is correctly set (e.g. de-DE or en-GB)");
+            $io->error("Error retrieving missing translations.");
         } elseif(empty($missingTranslations)) {
             $io->success("All entities are translated!");
         } else {

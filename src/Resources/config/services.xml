@@ -21,10 +21,5 @@
             <argument type="service" id="Dras\CheckTranslations\Service\MissingTranslationsService"/>
             <tag name="console.command"/>
         </service>
-
-        <service id="Dras\CheckTranslations\Core\Content\Example\SalesChannel\ExampleRoute">
-            <argument type="service" id="product.repository"/>
-        </service>
-
     </services>
 </container>
